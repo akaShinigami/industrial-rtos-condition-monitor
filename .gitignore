@@ -29,3 +29,6 @@ venv/
 
 # Logs
 *.log
+
+# Project-local Zephyr workspace
+.zephyr-workspace/
