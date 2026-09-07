@@ -1,0 +1,21 @@
+{
+    "name": "Industrial RTOS Condition Monitor",
+    "image": "ghcr.io/zephyrproject-rtos/zephyr-build:v0.29.3",
+
+    "overrideCommand": true,
+
+    "containerEnv": {
+        "ZEPHYR_TOOLCHAIN_VARIANT": "zephyr"
+    },
+
+    "postCreateCommand": "bash .devcontainer/setup-zephyr.sh",
+
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-vscode.cpptools",
+                "ms-vscode.cmake-tools"
+            ]
+        }
+    }
+}
