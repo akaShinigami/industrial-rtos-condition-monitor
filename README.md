@@ -23,7 +23,9 @@ sh tools/generate_visualization.sh
 
 Outputs are `build/visualization/scenario.csv` and `build/visualization/scenario.html`. Open the HTML locally in a browser. It is a self-contained, offline telemetry visualization of a recorded scenario, not a live dashboard.
 
-<!-- Preview placeholder: insert an image here once docs/images/scenario-visualization.png is committed. -->
+![Deterministic overtemperature trip and recovery telemetry](docs/images/scenario-visualization.png)
+
+Offline generated telemetry: RUNNING → overtemperature fault → FAULTED → measurement recovery → FAULTED latch → explicit safe reset → STOPPED. This is a recorded scenario, not a live dashboard. The complete generated HTML also contains the vibration/current plots and recorded-event table.
 
 ## Architecture
 
