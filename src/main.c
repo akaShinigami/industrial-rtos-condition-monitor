@@ -2,6 +2,7 @@
 
 #include "controller_state.h"
 #include "plant_simulator.h"
+#include "condition_monitor_service.h"
 
 int main(void)
 {
@@ -10,6 +11,8 @@ int main(void)
 
     controller_state_init();
     plant_simulator_init();
+    condition_monitor_service_init();
+    /* The monitor worker starts automatically and keeps STOPPED plant healthy. */
 
     controller_state_get_snapshot(&controller_snapshot);
     printk("Controller started: actuator=%s health=%s faults=0x%08x\n",

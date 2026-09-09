@@ -8,6 +8,10 @@ target_sources(app PRIVATE
     src/controller_state.c
     src/plant_model.c
     src/plant_simulator.c
+    src/condition_monitor.c
+    src/condition_monitor_service.c
+    src/actuator_state_machine.c
+    src/safety_supervisor.c
 )
 
 target_include_directories(app PRIVATE include)
