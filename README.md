@@ -1,5 +1,7 @@
 # Industrial RTOS Condition-Monitoring Controller
 
+[![CI](https://github.com/akaShinigami/industrial-rtos-condition-monitor/actions/workflows/ci.yml/badge.svg)](https://github.com/akaShinigami/industrial-rtos-condition-monitor/actions/workflows/ci.yml)
+
 A simulation-only controller built in C on Zephyr RTOS for a virtual industrial motor/pump. It monitors temperature, vibration, and current, detects abnormal conditions, and applies conservative actuator safety behaviour. Deterministic fault injection and software-watchdog supervision make fault detection, shutdown, and explicit recovery repeatable and testable on `native_sim`.
 
 ## Highlights
