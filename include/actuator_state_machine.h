@@ -1,0 +1,7 @@
+#ifndef ACTUATOR_STATE_MACHINE_H
+#define ACTUATOR_STATE_MACHINE_H
+#include "controller_state.h"
+enum actuator_transition_result { ACTUATOR_TRANSITION_OK, ACTUATOR_TRANSITION_INVALID, ACTUATOR_TRANSITION_RESET_DENIED };
+enum actuator_transition_result actuator_state_machine_request(enum controller_actuator_state);
+enum actuator_transition_result actuator_state_machine_reset(void);
+#endif
