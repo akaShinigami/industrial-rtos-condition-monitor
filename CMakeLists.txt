@@ -6,6 +6,8 @@ project(industrial_rtos_condition_monitor)
 target_sources(app PRIVATE
     src/main.c
     src/controller_state.c
+    src/plant_model.c
+    src/plant_simulator.c
 )
 
 target_include_directories(app PRIVATE include)
