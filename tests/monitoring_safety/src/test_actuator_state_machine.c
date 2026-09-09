@@ -130,3 +130,25 @@ ZTEST(actuator_state_machine, test_safe_reset_to_stopped)
     zassert_equal(state.health_state, CONTROLLER_HEALTH_HEALTHY);
     zassert_equal(state.active_faults, CONTROLLER_FAULT_NONE);
 }
+
+ZTEST(actuator_state_machine, test_reset_rejects_nonfaulted_actuator)
+{
+    struct controller_snapshot state;
+
+    zassert_equal(actuator_state_machine_reset(), ACTUATOR_TRANSITION_RESET_DENIED);
+    controller_state_get_snapshot(&state);
+    zassert_equal(state.actuator_state, CONTROLLER_ACTUATOR_STOPPED);
+}
+
+ZTEST(actuator_state_machine, test_safe_reset_preserves_warning_health)
+{
+    struct controller_snapshot state;
+
+    controller_state_set_actuator_state(CONTROLLER_ACTUATOR_FAULTED);
+    controller_state_set_health_state(CONTROLLER_HEALTH_WARNING);
+    zassert_equal(actuator_state_machine_reset(), ACTUATOR_TRANSITION_OK);
+    controller_state_get_snapshot(&state);
+    zassert_equal(state.actuator_state, CONTROLLER_ACTUATOR_STOPPED);
+    zassert_equal(state.health_state, CONTROLLER_HEALTH_WARNING);
+    zassert_equal(state.active_faults, CONTROLLER_FAULT_NONE);
+}

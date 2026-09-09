@@ -43,6 +43,35 @@ void controller_state_set_actuator_state(enum controller_actuator_state actuator
     k_mutex_unlock(&state_mutex);
 }
 
+bool controller_state_compare_exchange_actuator(enum controller_actuator_state expected,
+                                               enum controller_actuator_state desired)
+{
+    bool changed = false;
+
+    k_mutex_lock(&state_mutex, K_FOREVER);
+    if (state.actuator_state == expected) {
+        state.actuator_state = desired;
+        changed = true;
+    }
+    k_mutex_unlock(&state_mutex);
+    return changed;
+}
+
+bool controller_state_try_reset_actuator(void)
+{
+    bool reset = false;
+
+    k_mutex_lock(&state_mutex, K_FOREVER);
+    if (state.actuator_state == CONTROLLER_ACTUATOR_FAULTED &&
+        state.active_faults == CONTROLLER_FAULT_NONE &&
+        state.health_state < CONTROLLER_HEALTH_FAULT) {
+        state.actuator_state = CONTROLLER_ACTUATOR_STOPPED;
+        reset = true;
+    }
+    k_mutex_unlock(&state_mutex);
+    return reset;
+}
+
 void controller_state_set_health_state(enum controller_health_state health_state)
 {
     k_mutex_lock(&state_mutex, K_FOREVER);

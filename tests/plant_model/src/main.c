@@ -113,7 +113,10 @@ ZTEST(plant_model, test_model_is_deterministic)
     plant_model_get_snapshot(&first, &first_snapshot);
     plant_model_get_snapshot(&second, &second_snapshot);
 
-    zassert_mem_equal(&first_snapshot, &second_snapshot, sizeof(first_snapshot));
+    zassert_equal(first_snapshot.temperature_mdeg_c, second_snapshot.temperature_mdeg_c);
+    zassert_equal(first_snapshot.vibration_um_s, second_snapshot.vibration_um_s);
+    zassert_equal(first_snapshot.current_ma, second_snapshot.current_ma);
+    zassert_equal(first_snapshot.simulation_time_ms, second_snapshot.simulation_time_ms);
 }
 
 ZTEST(plant_model, test_simulation_time_progresses_by_fixed_step)

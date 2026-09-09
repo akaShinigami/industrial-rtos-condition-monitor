@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: native_sim verification
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    container:
+      image: ghcr.io/zephyrproject-rtos/zephyr-build:v0.29.3
+      # Allow checkout and West to write to the Actions workspace mounts.
+      options: --user 0
+    defaults:
+      run:
+        shell: bash --noprofile --norc -euo pipefail {0}
+    env:
+      ZEPHYR_TOOLCHAIN_VARIANT: zephyr
+      # The pinned image bundles this SDK; do not depend on a home-directory
+      # CMake registry because Actions supplies its own HOME in job containers.
+      ZEPHYR_SDK_INSTALL_DIR: /opt/toolchains/zephyr-sdk-1.0.1
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Initialize and verify Zephyr workspace
+        run: |
+          cd "$GITHUB_WORKSPACE"
+          for tool in git python3 west cmake ninja; do
+            command -v "$tool"
+          done
+          test -d "$ZEPHYR_SDK_INSTALL_DIR"
+          bash .devcontainer/setup-zephyr.sh
+          zephyr_dir="$GITHUB_WORKSPACE/.zephyr-workspace/zephyr"
+          expected_revision=$(git -C "$zephyr_dir" rev-parse 'v4.4.0^{commit}')
+          actual_revision=$(git -C "$zephyr_dir" rev-parse HEAD)
+          if [ "$actual_revision" != "$expected_revision" ]; then
+            echo "Expected Zephyr v4.4.0 ($expected_revision), got $actual_revision" >&2
+            exit 1
+          fi
+
+      - name: Build normal application
+        run: |
+          cd "$GITHUB_WORKSPACE/.zephyr-workspace"
+          west build -b native_sim -s "$GITHUB_WORKSPACE" \
+            -d "$GITHUB_WORKSPACE/build/monitoring-app"
+
+      - name: Build and run all test applications
+        run: |
+          cd "$GITHUB_WORKSPACE/.zephyr-workspace"
+          for suite in controller_state plant_model monitoring_safety batch2 scenarios; do
+            build_dir="$GITHUB_WORKSPACE/build/tests/$suite"
+            west build -b native_sim -s "$GITHUB_WORKSPACE/tests/$suite" \
+              -d "$build_dir"
+            timeout 60s "$build_dir/zephyr/zephyr.exe"
+          done
+
+      - name: Generate and validate visualization
+        run: |
+          cd "$GITHUB_WORKSPACE"
+          sh tools/generate_visualization.sh
+          test -s build/visualization/scenario.csv
+          test -s build/visualization/scenario.html
