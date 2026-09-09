@@ -1,6 +1,7 @@
 #include <zephyr/kernel.h>
 
 #include "controller_state.h"
+#include "diagnostics.h"
 #include "plant_simulator.h"
 
 #define PLANT_SIMULATOR_STACK_SIZE 1024
@@ -28,6 +29,7 @@ static void plant_simulator_thread(void)
         published_snapshot = next_snapshot;
         k_mutex_unlock(&snapshot_mutex);
 
+        diagnostics_heartbeat(DIAGNOSTIC_SERVICE_PLANT);
         k_sleep(K_MSEC(PLANT_MODEL_STEP_MS));
     }
 }

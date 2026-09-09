@@ -6,6 +6,7 @@ struct controller_state_data {
     enum controller_actuator_state actuator_state;
     enum controller_health_state health_state;
     uint32_t active_faults;
+    bool process_warning;
 };
 
 static struct controller_state_data state;
@@ -17,6 +18,7 @@ void controller_state_init(void)
     state.actuator_state = CONTROLLER_ACTUATOR_STOPPED;
     state.health_state = CONTROLLER_HEALTH_HEALTHY;
     state.active_faults = CONTROLLER_FAULT_NONE;
+    state.process_warning = false;
     k_mutex_unlock(&state_mutex);
 }
 
@@ -100,4 +102,33 @@ const char *controller_health_state_name(enum controller_health_state health_sta
     case CONTROLLER_HEALTH_EMERGENCY_STOP: return "EMERGENCY_STOP";
     default: return "UNKNOWN";
     }
+}
+
+/* Caller holds state_mutex. No owner's update can hide another owner's fault. */
+static void recompute_health(void)
+{
+    if (state.health_state != CONTROLLER_HEALTH_EMERGENCY_STOP) {
+        state.health_state = state.active_faults ? CONTROLLER_HEALTH_FAULT :
+            state.process_warning ? CONTROLLER_HEALTH_WARNING : CONTROLLER_HEALTH_HEALTHY;
+    }
+}
+
+void controller_state_update_owned_faults(uint32_t owned, uint32_t active)
+{
+    k_mutex_lock(&state_mutex, K_FOREVER);
+    state.active_faults = (state.active_faults & ~owned) | (active & owned);
+    recompute_health();
+    k_mutex_unlock(&state_mutex);
+}
+
+void controller_state_update_process(uint32_t active, bool warning)
+{
+    const uint32_t owned = CONTROLLER_FAULT_OVERTEMPERATURE |
+        CONTROLLER_FAULT_EXCESSIVE_VIBRATION | CONTROLLER_FAULT_OVERCURRENT;
+
+    k_mutex_lock(&state_mutex, K_FOREVER);
+    state.active_faults = (state.active_faults & ~owned) | (active & owned);
+    state.process_warning = warning;
+    recompute_health();
+    k_mutex_unlock(&state_mutex);
 }
