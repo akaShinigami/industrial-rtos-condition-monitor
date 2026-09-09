@@ -29,6 +29,7 @@ enum controller_fault_flag {
     CONTROLLER_FAULT_EXCESSIVE_VIBRATION = BIT(1),
     CONTROLLER_FAULT_OVERCURRENT = BIT(2),
     CONTROLLER_FAULT_SENSOR_FAILURE = BIT(3),
+    CONTROLLER_FAULT_SOFTWARE_WATCHDOG = BIT(4),
 };
 
 /** Atomically observed controller state for diagnostics. */
@@ -53,6 +54,15 @@ void controller_state_set_faults(uint32_t faults);
 void controller_state_clear_faults(uint32_t faults);
 /** Clear every active fault flag. */
 void controller_state_clear_all_faults(void);
+/**
+ * Atomically replace only owned fault bits and recompute aggregate health.
+ * All active bits are critical. Process warning is retained across other owners'
+ * updates; EMERGENCY_STOP is preserved until explicitly changed by its caller.
+ * Runtime owners use these APIs instead of separate fault/health setters.
+ */
+void controller_state_update_owned_faults(uint32_t owned, uint32_t active);
+/** Replace the three process fault bits and the process warning contribution. */
+void controller_state_update_process(uint32_t active, bool warning);
 /** Return whether every requested fault flag is active. */
 bool controller_state_has_faults(uint32_t faults);
 /** Convert an actuator state to a name, or "UNKNOWN" if invalid. */

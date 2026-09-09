@@ -12,6 +12,11 @@ target_sources(app PRIVATE
     src/condition_monitor_service.c
     src/actuator_state_machine.c
     src/safety_supervisor.c
+    src/fault_injector.c
+    src/sensor_health.c
+    src/monitoring_pipeline.c
+    src/diagnostics.c
+    src/diagnostics_service.c
 )
 
 target_include_directories(app PRIVATE include)
