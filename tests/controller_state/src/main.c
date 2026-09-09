@@ -95,3 +95,69 @@ ZTEST(controller_state, test_state_names)
                       "UNKNOWN");
     zassert_str_equal(controller_health_state_name((enum controller_health_state)-1), "UNKNOWN");
 }
+
+ZTEST(controller_state, test_checked_actuator_update_preserves_health_and_faults)
+{
+    struct controller_snapshot snapshot;
+
+    controller_state_set_health_state(CONTROLLER_HEALTH_WARNING);
+    controller_state_set_faults(CONTROLLER_FAULT_SENSOR_FAILURE);
+    zassert_true(controller_state_compare_exchange_actuator(CONTROLLER_ACTUATOR_STOPPED,
+                                                            CONTROLLER_ACTUATOR_STARTING));
+    controller_state_get_snapshot(&snapshot);
+    zassert_equal(snapshot.actuator_state, CONTROLLER_ACTUATOR_STARTING);
+    zassert_equal(snapshot.health_state, CONTROLLER_HEALTH_WARNING);
+    zassert_equal(snapshot.active_faults, CONTROLLER_FAULT_SENSOR_FAILURE);
+}
+
+ZTEST(controller_state, test_checked_update_rejects_state_changed_since_snapshot)
+{
+    struct controller_snapshot before;
+    struct controller_snapshot after;
+
+    controller_state_set_actuator_state(CONTROLLER_ACTUATOR_STARTING);
+    controller_state_get_snapshot(&before);
+    /* Deterministically represent a safety trip after the caller's read. */
+    controller_state_set_faults(CONTROLLER_FAULT_SOFTWARE_WATCHDOG);
+    controller_state_set_health_state(CONTROLLER_HEALTH_FAULT);
+    controller_state_set_actuator_state(CONTROLLER_ACTUATOR_FAULTED);
+    zassert_false(controller_state_compare_exchange_actuator(before.actuator_state,
+                                                             CONTROLLER_ACTUATOR_RUNNING));
+    controller_state_get_snapshot(&after);
+    zassert_equal(after.actuator_state, CONTROLLER_ACTUATOR_FAULTED);
+    zassert_equal(after.health_state, CONTROLLER_HEALTH_FAULT);
+    zassert_equal(after.active_faults, CONTROLLER_FAULT_SOFTWARE_WATCHDOG);
+}
+
+ZTEST(controller_state, test_reset_checks_fault_added_after_healthy_observation)
+{
+    struct controller_snapshot before;
+    struct controller_snapshot after;
+
+    controller_state_set_actuator_state(CONTROLLER_ACTUATOR_FAULTED);
+    controller_state_get_snapshot(&before);
+    zassert_equal(before.active_faults, CONTROLLER_FAULT_NONE);
+    zassert_equal(before.health_state, CONTROLLER_HEALTH_HEALTHY);
+    controller_state_set_faults(CONTROLLER_FAULT_SOFTWARE_WATCHDOG);
+    zassert_false(controller_state_try_reset_actuator());
+    controller_state_get_snapshot(&after);
+    zassert_equal(after.actuator_state, CONTROLLER_ACTUATOR_FAULTED);
+    zassert_equal(after.active_faults, CONTROLLER_FAULT_SOFTWARE_WATCHDOG);
+    zassert_equal(after.health_state, CONTROLLER_HEALTH_HEALTHY);
+}
+
+ZTEST(controller_state, test_reset_checks_health_changed_after_healthy_observation)
+{
+    struct controller_snapshot before;
+    struct controller_snapshot after;
+
+    controller_state_set_actuator_state(CONTROLLER_ACTUATOR_FAULTED);
+    controller_state_get_snapshot(&before);
+    zassert_equal(before.health_state, CONTROLLER_HEALTH_HEALTHY);
+    controller_state_set_health_state(CONTROLLER_HEALTH_EMERGENCY_STOP);
+    zassert_false(controller_state_try_reset_actuator());
+    controller_state_get_snapshot(&after);
+    zassert_equal(after.actuator_state, CONTROLLER_ACTUATOR_FAULTED);
+    zassert_equal(after.health_state, CONTROLLER_HEALTH_EMERGENCY_STOP);
+    zassert_equal(after.active_faults, CONTROLLER_FAULT_NONE);
+}

@@ -183,3 +183,31 @@ ZTEST(condition_monitor, test_repeated_evaluation_is_identical)
     zassert_equal(first.health, second.health);
     zassert_equal(first.fault_flags, second.fault_flags);
 }
+
+ZTEST(condition_monitor, test_vibration_above_signed_range_is_fault)
+{
+    assert_assessment((struct plant_snapshot){25000, (uint32_t)INT32_MAX + 1U, 0, 0},
+                      CONDITION_NORMAL, CONDITION_FAULT, CONDITION_NORMAL,
+                      CONTROLLER_HEALTH_FAULT, CONTROLLER_FAULT_EXCESSIVE_VIBRATION);
+}
+
+ZTEST(condition_monitor, test_maximum_vibration_is_fault)
+{
+    assert_assessment((struct plant_snapshot){25000, UINT32_MAX, 0, 0},
+                      CONDITION_NORMAL, CONDITION_FAULT, CONDITION_NORMAL,
+                      CONTROLLER_HEALTH_FAULT, CONTROLLER_FAULT_EXCESSIVE_VIBRATION);
+}
+
+ZTEST(condition_monitor, test_current_above_signed_range_is_fault)
+{
+    assert_assessment((struct plant_snapshot){25000, 0, (uint32_t)INT32_MAX + 1U, 0},
+                      CONDITION_NORMAL, CONDITION_NORMAL, CONDITION_FAULT,
+                      CONTROLLER_HEALTH_FAULT, CONTROLLER_FAULT_OVERCURRENT);
+}
+
+ZTEST(condition_monitor, test_maximum_current_is_fault)
+{
+    assert_assessment((struct plant_snapshot){25000, 0, UINT32_MAX, 0},
+                      CONDITION_NORMAL, CONDITION_NORMAL, CONDITION_FAULT,
+                      CONTROLLER_HEALTH_FAULT, CONTROLLER_FAULT_OVERCURRENT);
+}

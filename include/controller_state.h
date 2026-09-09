@@ -46,6 +46,19 @@ void controller_state_init(void);
 void controller_state_get_snapshot(struct controller_snapshot *snapshot);
 /** Set the actuator operating state. */
 void controller_state_set_actuator_state(enum controller_actuator_state state);
+/**
+ * Commit an actuator change only if its current state still equals expected.
+ * The state machine validates the expected/desired transition before calling;
+ * comparison and mutation share one lock, so a stale decision cannot overwrite
+ * an intervening actuator change. Does not change health or faults.
+ */
+bool controller_state_compare_exchange_actuator(enum controller_actuator_state expected,
+                                               enum controller_actuator_state desired);
+/**
+ * Atomically reset FAULTED to STOPPED only with no faults and health below FAULT.
+ * Validation and mutation use the same lock as health/fault updates.
+ */
+bool controller_state_try_reset_actuator(void);
 /** Set the overall system health state. */
 void controller_state_set_health_state(enum controller_health_state state);
 /** Set one or more fault flags without clearing currently active flags. */
